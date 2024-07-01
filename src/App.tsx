@@ -36,7 +36,7 @@ function App() {
       });
 
   const handleDownloadButton = () =>
-    new Promise(async (resolve, reject) => {
+    new Promise(async (_resolve, _reject) => {
       const tt = await getSStik();
 
       if (tt.status != "success") {
