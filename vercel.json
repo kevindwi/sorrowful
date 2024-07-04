@@ -1,6 +1,6 @@
 {
   "env": {
-    "GENERATE_SOURCEMAP": false
+    "GENERATE_SOURCEMAP": "false"
   },
   "buildCommand": "cd client && npm install && npm run build",
   "framework": "react",
