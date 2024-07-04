@@ -20,7 +20,7 @@ function App() {
   async function extract(input) {
     let $ = cheerio.load(input);
     let regex =
-      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/;
+      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/; // eslint-disable-line
     let res = regex.exec($("style").text());
 
     // Images / Slide Result
@@ -184,25 +184,24 @@ function App() {
                   <span className="text-sm text-zinc-400">{data.username}</span>
                 </div>
                 <div>
-                  <a
-                    // href={data.no_wm}
+                  <button
                     onClick={() => downloadHandler(data.no_wm, "mp4")}
                     className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
                   >
                     No WM
-                  </a>
+                  </button>
                   {/* <a
                     href={data.no_wm}
                     className="text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
                   >
                     With WM
                   </a> */}
-                  <a
+                  <button
                     onClick={() => downloadHandler(data.mp3, "mp3")}
                     className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
                   >
                     MP3
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
