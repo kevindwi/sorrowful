@@ -8,6 +8,8 @@ function App() {
   const [url, setUrl] = useState("");
   const [data, setData] = useState();
 
+  const [loading, setLoading] = useState(false);
+
   const [message, setMessage] = useState("");
 
   const getSStik = () =>
@@ -52,6 +54,8 @@ function App() {
 
   const handleDownloadButton = () =>
     new Promise(async (_resolve, _reject) => {
+      setLoading(true);
+
       const tt = await getSStik();
       const token = tt.token;
       // console.log(token);
@@ -74,11 +78,13 @@ function App() {
           } else {
             const ex = await extract(response.data);
             setData(ex);
+            setLoading(false);
           }
         })
         .catch((e) => {
           // console.log(e);
           setMessage(e.message);
+          setLoading(false);
         });
     });
 
@@ -117,20 +123,25 @@ function App() {
       });
   }
 
+  const clearRecent = () => {
+    setUrl("");
+    setData();
+  };
+
   return (
-    <div className=" min-h-screen bg-zinc-950 px-4 pb-10">
+    <div className="min-h-screen bg-zinc-950 px-4 md:px-12 py-2 pb-10">
       <div className="flex items-center w-full h-14">
         <div className="text-2xl font-medium text-white">Sorrowful</div>
       </div>
 
       <div className="flex flex-col items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl text-white font-medium mt-12 mb-3">
-            Download TikTok videos in just one click
+          <h1 className="text-xl sm:text-2xl md:text-3xl text-white font-medium mt-8 mb-3">
+            TikTok Video Downloader
           </h1>
         </div>
 
-        <div className="w-full sm:w-[80%] md:w-[80%] h-full bg-zinc-900 rounded-[40px] my-5 px-6 py-6">
+        <div className="w-full sm:w-[80%] lg:w-[60%] h-full bg-zinc-900 rounded-[28px] my-5 px-6 py-6">
           <div className="w-full">
             <span className="text-red-500">{message}</span>
             <div className="flex flex-col md:flex-row md:items-center justify-center gap-2">
@@ -140,7 +151,7 @@ function App() {
                   id="default-input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="!outline-none text-sm caret-white rounded-full block w-full p-2.5 pl-4 pr-10 bg-zinc-800 border-zinc-600 placeholder-zinc-500 text-white"
+                  className="!outline-none text-sm caret-white rounded-[12px] block w-full p-2.5 pl-4 pr-10 bg-zinc-800 border-zinc-600 placeholder-zinc-500 text-white"
                   placeholder="Your link goes here"
                 />
                 <div className="absolute cursor-pointer inset-y-0 right-0 flex items-center mr-2">
@@ -151,7 +162,7 @@ function App() {
                     strokeWidth={1.5}
                     stroke="currentColor"
                     className="size-6 text-white hover:text-zinc-400"
-                    onClick={() => setUrl("")}
+                    onClick={clearRecent}
                   >
                     <path
                       strokeLinecap="round"
@@ -165,50 +176,60 @@ function App() {
               <button
                 type="button"
                 onClick={handleDownloadButton}
-                className="text-white font-medium rounded-full text-sm px-6 py-2.5 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
+                className="text-white font-medium rounded-[12px] text-sm px-6 py-2.5 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
               >
                 Download
               </button>
             </div>
           </div>
 
-          {data && (
-            <div className="flex flex-col md:flex-row gap-4 mt-6">
-              <div className="md:max-h-72 max-w-full sm:max-w-52">
-                <img
-                  className=" rounded-2xl h-full"
-                  src={data.thumbnail}
-                  alt="description"
-                />
+          <div className="w-full">
+            {loading === false ? (
+              <div>
+                {data && (
+                  <div className="flex flex-row gap-3 mt-5">
+                    <div className="md:max-h-72 max-w-20 sm:max-w-32">
+                      <img
+                        className="rounded-[12px] w-full"
+                        src={data.thumbnail}
+                        alt="description"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-between gap-5">
+                      <div className="">
+                        <h2 className="text-white">{data.description}</h2>
+                        <span className="text-sm text-zinc-400">
+                          {data.username}
+                        </span>
+                      </div>
+                      <div>
+                        <button
+                          onClick={() => downloadHandler(data.no_wm, "mp4")}
+                          className="cursor-pointer text-white font-medium rounded-full text-sm px-5 py-1.5 mr-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
+                        >
+                          No WM
+                        </button>
+                        <button
+                          onClick={() => downloadHandler(data.mp3, "mp3")}
+                          className="cursor-pointer text-white font-medium rounded-full text-sm px-5 py-1.5 mr-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
+                        >
+                          MP3
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex flex-col gap-5">
-                <div className="">
-                  <h2 className="text-white">{data.description}</h2>
-                  <span className="text-sm text-zinc-400">{data.username}</span>
-                </div>
-                <div>
-                  <button
-                    onClick={() => downloadHandler(data.no_wm, "mp4")}
-                    className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
-                  >
-                    No WM
-                  </button>
-                  {/* <a
-                    href={data.no_wm}
-                    className="text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
-                  >
-                    With WM
-                  </a> */}
-                  <button
-                    onClick={() => downloadHandler(data.mp3, "mp3")}
-                    className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
-                  >
-                    MP3
-                  </button>
+            ) : (
+              <div className="flex justify-center mt-5 py-8">
+                <div class="circles-to-rhombuses-spinner">
+                  <div class="circle"></div>
+                  <div class="circle"></div>
+                  <div class="circle"></div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
