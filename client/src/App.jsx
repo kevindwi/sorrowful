@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
+const api_host = process.env.REACT_APP_API_HOST;
+
 function App() {
   const [url, setUrl] = useState("");
   const [data, setData] = useState();
@@ -10,7 +12,8 @@ function App() {
 
   const getSStik = () =>
     new Promise(async (resolve, _reject) => {
-      await axios.get("http://localhost:5000/api/ssstik").then(({ data }) => {
+      console.log(api_host);
+      await axios.get(`${api_host}/api/ssstik`).then(({ data }) => {
         const regex = /s_tt\s*=\s*["']([^"']+)["']/;
         const match = regex.exec(data);
         resolve({ status: "success", token: match[1] });
@@ -58,7 +61,7 @@ function App() {
       }
 
       await axios
-        .post("http://localhost:5000/api/ssstik", {
+        .post(`${api_host}/api/ssstik`, {
           url,
           token,
         })
