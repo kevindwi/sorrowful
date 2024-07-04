@@ -1,86 +1,39 @@
+import React, { useState } from "react";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { useState } from "react";
-
-type SSSTik = {
-  avatar?: string;
-  thumbnail: string;
-  description: string;
-  username: string;
-  likeCount: string;
-  commentCount: string;
-  shareCount: string;
-  images?: string[];
-  no_wm: string;
-  mp3: string;
-};
 
 function App() {
   const [url, setUrl] = useState("");
-  const [data, setData] = useState<SSSTik>();
+  const [data, setData] = useState();
 
   const [message, setMessage] = useState("");
 
   const getSStik = () =>
-    axios
-      .get("https://ssstik.io", {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0",
-        },
-      })
-      .then(({ data }) => {
+    new Promise(async (resolve, _reject) => {
+      await axios.get("http://localhost:5000/api/ssstik").then(({ data }) => {
         const regex = /s_tt\s*=\s*["']([^"']+)["']/;
         const match = regex.exec(data);
-        return { status: "success", token: match![1] };
+        resolve({ status: "success", token: match[1] });
       });
-
-  const handleDownloadButton = () =>
-    new Promise(async (_resolve, _reject) => {
-      const tt = await getSStik();
-
-      if (tt.status != "success") {
-        setMessage("Invalid Tiktok URL. Make sure your url is correct!");
-      }
-
-      axios("https://ssstik.io/abc?url=dl", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          Origin: "https://ssstik.io",
-          Referer: "https://ssstik.io" + "/en-1",
-          "User-Agent":
-            "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0",
-        },
-        data: new URLSearchParams(
-          Object.entries({
-            id: url,
-            locale: "en",
-            tt: tt.token,
-          })
-        ),
-      })
-        .then(({ data }: any) => setData(extract(data)))
-        .catch((e) => setMessage(e.message));
     });
 
-  function extract(input: string) {
+  async function extract(input) {
     let $ = cheerio.load(input);
     let regex =
       /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/;
     let res = regex.exec($("style").text());
 
     // Images / Slide Result
-    const images: string[] = [];
+    const images = [];
     $("ul.splide__list > li")
       .get()
-      .map((img) => {
-        images.push($(img)!.find("a")!.attr("href")!.trim());
-      });
+      .map((img) => images.push($(img).find("a").attr("href").trim()));
+
+    // console.log(input);
 
     return {
       avatar: $(".result_author").attr("src"),
-      thumbnail: res![0],
+      thumbnail: res[0],
       description: $("p.maintext").text().trim(),
       username: $("h2").text().trim(),
       likeCount: $("#trending-actions > .justify-content-start").text().trim(),
@@ -89,17 +42,49 @@ function App() {
         .trim(),
       shareCount: $("#trending-actions > .justify-content-end").text().trim(),
       images: images,
-      no_wm: $("a.without_watermark").attr("href")!.trim(),
-      mp3: $("a.music").attr("href")!.trim(),
+      no_wm: $("a.without_watermark").attr("href").trim(),
+      mp3: $("a.music").attr("href").trim(),
     };
   }
 
-  function downloadHandler(url: string, extension: string) {
+  const handleDownloadButton = () =>
+    new Promise(async (_resolve, _reject) => {
+      const tt = await getSStik();
+      const token = tt.token;
+      // console.log(token);
+
+      if (tt.status !== "success") {
+        setMessage("Invalid Tiktok URL. Make sure your url is correct!");
+      }
+
+      await axios
+        .post("http://localhost:5000/api/ssstik", {
+          url,
+          token,
+        })
+        .then(async (response) => {
+          // console.log(response.data.status);
+          if (response.data.status === "failed") {
+            setTimeout(function () {
+              handleDownloadButton();
+            }, 1000);
+          } else {
+            const ex = await extract(response.data);
+            setData(ex);
+          }
+        })
+        .catch((e) => {
+          // console.log(e);
+          setMessage(e.message);
+        });
+    });
+
+  function downloadHandler(url, extension) {
     fetch(url, {
       method: "GET",
       headers: {
         Origin: "https://ssstik.io",
-        Referer: "https://ssstik.io" + "/en-1",
+        Referer: "https://ssstik.io/en-1",
         "User-Agent":
           "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0",
       },
@@ -146,13 +131,34 @@ function App() {
           <div className="w-full">
             <span className="text-red-500">{message}</span>
             <div className="flex flex-col md:flex-row md:items-center justify-center gap-2">
-              <input
-                type="text"
-                id="default-input"
-                onChange={(e) => setUrl(e.target.value)}
-                className=" text-sm rounded-full block w-full p-2.5 pl-4 bg-zinc-800 border-zinc-600 placeholder-zinc-500 text-white"
-                placeholder="https://www.tiktok.com/@account_name/video/9159722376380604406"
-              />
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  id="default-input"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="!outline-none text-sm caret-white rounded-full block w-full p-2.5 pl-4 pr-10 bg-zinc-800 border-zinc-600 placeholder-zinc-500 text-white"
+                  placeholder="Your link goes here"
+                />
+                <div className="absolute cursor-pointer inset-y-0 right-0 flex items-center mr-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="size-6 text-white hover:text-zinc-400"
+                    onClick={() => setUrl("")}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={handleDownloadButton}
@@ -165,11 +171,13 @@ function App() {
 
           {data && (
             <div className="flex flex-col md:flex-row gap-4 mt-6">
-              <img
-                className="md:max-h-72 rounded-2xl mx-auto max-w-full sm:max-w-52 md:max-w-full"
-                src={data.thumbnail}
-                alt="image description"
-              />
+              <div className="md:max-h-72 max-w-full sm:max-w-52">
+                <img
+                  className=" rounded-2xl h-full"
+                  src={data.thumbnail}
+                  alt="description"
+                />
+              </div>
               <div className="flex flex-col gap-5">
                 <div className="">
                   <h2 className="text-white">{data.description}</h2>
@@ -179,7 +187,7 @@ function App() {
                   <a
                     // href={data.no_wm}
                     onClick={() => downloadHandler(data.no_wm, "mp4")}
-                    className="text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
+                    className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
                   >
                     No WM
                   </a>
@@ -191,7 +199,7 @@ function App() {
                   </a> */}
                   <a
                     onClick={() => downloadHandler(data.mp3, "mp3")}
-                    className="text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
+                    className="cursor-pointer text-white font-medium rounded-full text-sm px-6 py-1.5 me-2 mb-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-blue-800"
                   >
                     MP3
                   </a>
